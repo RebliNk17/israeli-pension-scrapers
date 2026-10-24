@@ -1,0 +1,41 @@
+[project]
+name = "israeli-pension-scrapers"
+version = "0.2.0"
+description = "Unified async Python scrapers for Israeli pension, keren hishtalmut, kupat gemel, and long-term savings providers"
+readme = "README.md"
+authors = [
+    { name = "Shai Cohen", email = "shai@cohens.dev" }
+]
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    "httpx>=0.27.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/RebliNk17/israeli-pension-scrapers"
+Repository = "https://github.com/RebliNk17/israeli-pension-scrapers"
+Issues = "https://github.com/RebliNk17/israeli-pension-scrapers/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/israeli_pension_scrapers"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public client-side AES key extracted from Migdal Android APK for PIN token formatting"
+paths = ['''src/israeli_pension_scrapers/providers/migdal\.py''', '''tests/test_migdal\.py''']
