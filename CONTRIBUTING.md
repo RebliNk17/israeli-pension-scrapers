@@ -24,7 +24,7 @@ uv sync
 
 ## Making a change
 
-1. Fork the repo and create a branch from `main`.
+1. Fork the repo and create a branch from `master`.
 2. Make your change and add or update tests.
 3. Run the checks:
 

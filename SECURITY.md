@@ -11,7 +11,7 @@ Include what you found, how to reproduce it, and the impact. We aim to reply wit
 
 ## Supported versions
 
-Only the latest release on `main` receives security fixes.
+Only the latest release on `master` receives security fixes.
 
 ## Guidelines for callers
 
