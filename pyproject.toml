@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Unified async Python scrapers for Israeli pension, keren hishtalmut, kupat gemel, and long-term savings providers"
 readme = "README.md"
 authors = [
-    { name = "Shai Cohen", email = "shai@cohens.dev" }
+    { name = "RebliNk17", email = "21306877+RebliNk17@users.noreply.github.com" }
 ]
 requires-python = ">=3.11"
 license = "Apache-2.0"
