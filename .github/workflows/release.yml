@@ -42,30 +42,46 @@ jobs:
           uv sync --frozen
           uv run pytest -q
 
-      - name: Semantic Release
-        id: semantic
-        uses: python-semantic-release/python-semantic-release@v9
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          build: false
-
-      - name: Build distributions
-        if: steps.semantic.outputs.released == 'true' || inputs.force_publish == true
+      - name: Detect next semantic version
+        id: versioning
         run: |
-          git fetch --tags
-          if [ "${{ steps.semantic.outputs.released }}" = "true" ]; then
-            git checkout "${{ steps.semantic.outputs.tag }}"
+          LAST_TAG=$(uv tool run python-semantic-release version --print-last-released-tag 2>/dev/null || echo "")
+          NEXT_TAG=$(uv tool run python-semantic-release --noop version --print-tag 2>/dev/null || echo "")
+          echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+          echo "next_tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LAST_TAG" ]; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
+            echo "Will release $NEXT_TAG (previous: $LAST_TAG)"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            echo "No new version to release (current: $LAST_TAG)"
           fi
+
+      - name: Create and push Git tag
+        if: steps.versioning.outputs.released == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.versioning.outputs.tag }}"
+          git push origin "${{ steps.versioning.outputs.tag }}"
+
+      - name: Build distribution packages
+        if: steps.versioning.outputs.released == 'true' || inputs.force_publish == true
+        run: |
           rm -rf dist/
           uv build
 
-      - name: Attach artifacts to GitHub Release
-        if: steps.semantic.outputs.released == 'true'
+      - name: Create GitHub Release
+        if: steps.versioning.outputs.released == 'true'
         run: |
-          gh release upload "${{ steps.semantic.outputs.tag }}" dist/* --clobber
+          gh release create "${{ steps.versioning.outputs.tag }}" dist/* \
+            --title "${{ steps.versioning.outputs.tag }}" \
+            --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to PyPI
-        if: steps.semantic.outputs.released == 'true' || inputs.force_publish == true
+        if: steps.versioning.outputs.released == 'true' || inputs.force_publish == true
         uses: pypa/gh-action-pypi-publish@release/v1
