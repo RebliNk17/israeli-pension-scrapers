@@ -2,22 +2,70 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      force_publish:
+        description: "Publish current version to PyPI regardless of new release tag"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
+    name: Release & Publish
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/israeli-pension-scrapers
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - run: uv sync --frozen
-      - run: uv run pytest -q
-      - run: uv build
-      - run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes --verify-tag
+
+      - name: Run test suite
+        run: |
+          uv sync --frozen
+          uv run pytest -q
+
+      - name: Semantic Release
+        id: semantic
+        uses: python-semantic-release/python-semantic-release@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          build: false
+
+      - name: Build distributions
+        if: steps.semantic.outputs.released == 'true' || inputs.force_publish == true
+        run: |
+          git fetch --tags
+          if [ "${{ steps.semantic.outputs.released }}" = "true" ]; then
+            git checkout "${{ steps.semantic.outputs.tag }}"
+          fi
+          rm -rf dist/
+          uv build
+
+      - name: Attach artifacts to GitHub Release
+        if: steps.semantic.outputs.released == 'true'
+        run: |
+          gh release upload "${{ steps.semantic.outputs.tag }}" dist/* --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to PyPI
+        if: steps.semantic.outputs.released == 'true' || inputs.force_publish == true
+        uses: pypa/gh-action-pypi-publish@release/v1
